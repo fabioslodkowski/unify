@@ -1,0 +1,10 @@
+# Configurações sensíveis — NUNCA commitar
+app/config.php
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.log
+
+# PHP
+*.tmp

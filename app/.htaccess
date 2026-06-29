@@ -1,0 +1,13 @@
+Options -Indexes
+DirectoryIndex index.php
+
+# Bloqueia acesso direto aos arquivos de lib e config
+<FilesMatch "^(config|layout|github|ai|render)\.php$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+<Directory "lib">
+    Order allow,deny
+    Deny from all
+</Directory>
