@@ -203,15 +203,17 @@ layout_head($nome);
             <span style="font-weight:400;opacity:.7">(<?= count($lista) ?>)</span>
           </div>
           <?php foreach ($lista as $n): ?>
-            <div style="display:flex;align-items:flex-start;gap:.6rem;padding:.45rem .6rem;
+            <a href="/notas.php?slug=<?= urlencode($slug) ?>&usuario=<?= urlencode($n['usuario']) ?>&editar=<?= urlencode($n['id']) ?>"
+              style="display:flex;align-items:flex-start;gap:.6rem;padding:.45rem .6rem;
               border-radius:8px;background:<?= $cfg['bg'] ?>;border:1px solid <?= $cfg['border'] ?>;
-              margin-bottom:.35rem;">
+              margin-bottom:.35rem;text-decoration:none;color:inherit;transition:filter .15s;"
+              onmouseover="this.style.filter='brightness(.96)'" onmouseout="this.style.filter=''">
               <span style="font-size:.85rem;margin-top:.05rem"><?= $cfg['icon'] ?></span>
               <span style="font-size:.875rem;flex:1;line-height:1.5;"><?= nl2br(htmlspecialchars($n['texto'])) ?></span>
-              <span style="font-size:.75rem;color:<?= $cfg['cor'] ?>;opacity:.7;white-space:nowrap;">
-                <?= htmlspecialchars(ucfirst($n['usuario'])) ?>
+              <span style="font-size:.75rem;color:<?= $cfg['cor'] ?>;opacity:.7;white-space:nowrap;margin-top:.1rem;">
+                <?= htmlspecialchars(ucfirst($n['usuario'])) ?> &nbsp;✏️
               </span>
-            </div>
+            </a>
           <?php endforeach; ?>
         </div>
       <?php endforeach; ?>

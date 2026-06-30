@@ -8,6 +8,7 @@ global $USUARIOS;
 
 $slug    = trim($_GET['slug'] ?? $_POST['slug'] ?? '');
 $usuario = trim($_GET['usuario'] ?? $_POST['usuario'] ?? '');
+$editar_id = trim($_GET['editar'] ?? '');
 
 if (!$slug) redirect('/');
 if (!$usuario) redirect("/assunto.php?slug=$slug");
@@ -209,6 +210,17 @@ layout_head("Notas — $nome_usuario");
 
 <script>
 var tipoSelecionado = null;
+
+// Abre edição direto se veio com ?editar=id
+<?php if ($editar_id): ?>
+window.addEventListener('DOMContentLoaded', function() {
+  var el = document.getElementById('nota-<?= htmlspecialchars($editar_id) ?>');
+  if (el) {
+    editarNota('<?= htmlspecialchars($editar_id) ?>');
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+});
+<?php endif; ?>
 
 function selecionaTipo(tipo) {
   document.querySelectorAll('.tipo-card').forEach(el => {
