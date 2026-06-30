@@ -69,7 +69,7 @@ PROMPT;
     }
 }
 
-function ai_consolidar_incremental(string $assunto, string $consolidado_anterior, array $novos, array $ctx = []): string
+function ai_consolidar_incremental(string $assunto, string $consolidado_anterior, array $novos, array $notas_novas = [], array $ctx = []): string
 {
     $provider = AI_PROVIDER;
 
@@ -97,35 +97,44 @@ function ai_consolidar_incremental(string $assunto, string $consolidado_anterior
     $ctx_txt = '';
     if (!empty($ctx['problema'])) $ctx_txt .= "**Problema a resolver:** {$ctx['problema']}\n";
     if (!empty($ctx['objetivo'])) $ctx_txt .= "**Objetivo:** {$ctx['objetivo']}\n";
-    if (!empty($ctx['global'])) $ctx_txt .= global_para_prompt($ctx['global']) . "\n";
-    if (!empty($ctx['notas']))  $ctx_txt .= notas_para_prompt($ctx['notas']) . "\n";
+    if (!empty($ctx['global']))   $ctx_txt .= global_para_prompt($ctx['global']) . "\n";
     if ($ctx_txt) $ctx_txt = "\n$ctx_txt\n";
 
-    $prompt = <<<PROMPT
-Você tem um resumo consolidado anterior e novos arquivos Markdown que precisam ser incorporados.
+    // Notas novas formatadas separadamente
+    $notas_ctx = !empty($notas_novas)
+        ? "\n## Novas notas da equipe a incorporar:\n\n" . notas_para_prompt($notas_novas)
+        : '';
 
-Sua tarefa é atualizar o resumo consolidado incorporando as informações dos novos arquivos.
+    $descricao = [];
+    if (!empty($novos))       $descricao[] = count($novos) . ' novo(s) arquivo(s)';
+    if (!empty($notas_novas)) $descricao[] = count($notas_novas) . ' nova(s) nota(s)';
+    $desc = implode(' e ', $descricao) ?: 'novas contribuições';
+
+    $prompt = <<<PROMPT
+Você tem um resumo consolidado atual e novas contribuições para incorporar ({$desc}).
 
 Regras:
-- Mantenha toda a estrutura e informação do resumo anterior
-- Incorpore os novos pontos, evidências e análises dos novos arquivos
-- Identifique se os novos arquivos confirmam, divergem ou complementam o que já estava no consolidado
-- Atualize as seções afetadas (pontos de consenso, divergentes, riscos, próximos passos, etc.)
-- Adicione os novos arquivos na seção de Fontes Utilizadas
+- Mantenha toda a estrutura e informações do resumo atual
+- Incorpore apenas o que é novo — não repita o que já está no consolidado
+- Identifique se as novidades confirmam, divergem ou complementam o consolidado
+- Atualize as seções afetadas (consenso, divergências, riscos, próximos passos, etc.)
+- Notas do tipo "Decisão" são fatos consolidados — incorpore como tal
+- Notas do tipo "Restrição" devem aparecer nas restrições/riscos
+- Adicione novos arquivos na seção de Fontes Utilizadas
 - Use emojis nos títulos das seções
 - Escreva em português do Brasil
 
 Assunto: **{$assunto}**{$ctx_txt}
 
-## Resumo consolidado anterior:
+## Resumo consolidado atual (base):
 
 {$anterior_truncado}
 
 ## Novos arquivos a incorporar:
 
-{$novos_ctx}
+{$novos_ctx}{$notas_ctx}
 
-Gere o resumo consolidado atualizado com a mesma estrutura de seções do anterior.
+Gere o resumo consolidado atualizado com a mesma estrutura de seções.
 PROMPT;
 
     if ($provider === 'claude') {

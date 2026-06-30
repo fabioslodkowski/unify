@@ -16,7 +16,12 @@ if (!$slug) {
 $nome    = ucwords(str_replace('-', ' ', $slug));
 $uploads = gh_list_uploads($slug);
 
-// Carrega contexto (problema + objetivo)
+if (empty($uploads)) {
+    echo json_encode(['ok' => false, 'erro' => 'Nenhum arquivo encontrado.']);
+    exit;
+}
+
+// Carrega contexto do assunto (problema + objetivo)
 $ctx_raw = gh_get_content("assuntos/$slug/contexto.json");
 $ctx     = $ctx_raw ? json_decode($ctx_raw, true) : [];
 
@@ -24,22 +29,20 @@ $ctx     = $ctx_raw ? json_decode($ctx_raw, true) : [];
 $global_raw    = gh_get_content('config/global.json');
 $ctx['global'] = $global_raw ? json_decode($global_raw, true) : null;
 
-// Carrega todas as notas da equipe
-$ctx['notas'] = notas_de_todos($slug);
+// Carrega meta da consolidação anterior
+$meta_path      = "assuntos/$slug/consolidado/meta.json";
+$meta_raw       = gh_get_content($meta_path);
+$meta_anterior  = $meta_raw ? json_decode($meta_raw, true) : null;
+$paths_anteriores     = $meta_anterior['arquivos'] ?? [];
+$ids_notas_anteriores = $meta_anterior['notas_ids'] ?? [];
 
-if (empty($uploads)) {
-    echo json_encode(['ok' => false, 'erro' => 'Nenhum arquivo encontrado.']);
-    exit;
-}
-
-// Carrega meta da consolidação anterior (quais arquivos já foram usados)
-$meta_path       = "assuntos/$slug/consolidado/meta.json";
-$meta_raw        = gh_get_content($meta_path);
-$meta_anterior   = $meta_raw ? json_decode($meta_raw, true) : null;
-$paths_anteriores = $meta_anterior['arquivos'] ?? [];
+// Todas as notas — separa novas das já consolidadas
+$todas_notas  = notas_de_todos($slug);
+$notas_novas  = array_values(array_filter($todas_notas, fn($n) => !in_array($n['id'], $ids_notas_anteriores)));
+$ctx['notas'] = $todas_notas;
 
 // Separa arquivos novos dos já consolidados
-$arquivos_novos    = [];
+$arquivos_novos      = [];
 $arquivos_anteriores = [];
 
 foreach ($uploads as $f) {
@@ -65,24 +68,28 @@ $modelo   = AI_PROVIDER === 'claude' ? CLAUDE_MODEL : OPENAI_MODEL;
 $data     = date('d/m/Y H:i');
 
 try {
-    // Se há consolidado anterior e existem novos arquivos, faz consolidação incremental
     $consolidado_anterior = gh_get_content("assuntos/$slug/consolidado/resumo-final.md");
+    $tem_anterior         = $consolidado_anterior && !empty($paths_anteriores);
+    $tem_novidades        = !empty($arquivos_novos) || !empty($notas_novas);
 
-    if ($consolidado_anterior && !empty($paths_anteriores) && !empty($arquivos_novos)) {
-        $resultado = ai_consolidar_incremental($nome, $consolidado_anterior, $arquivos_novos, $ctx);
+    if ($tem_anterior && $tem_novidades) {
+        // INCREMENTAL: doc consolidado atual + só arquivos novos + só notas novas
+        $resultado = ai_consolidar_incremental($nome, $consolidado_anterior, $arquivos_novos, $notas_novas, $ctx);
+        $tipo_geracao = !empty($arquivos_novos) && !empty($notas_novas) ? 'incremental'
+            : (!empty($arquivos_novos) ? 'incremental' : 'notas');
     } else {
-        // Primeira vez ou regerar tudo
-        $todos = array_merge($arquivos_anteriores, $arquivos_novos);
+        // PRIMEIRA VEZ: envia tudo
+        $todos     = array_merge($arquivos_anteriores, $arquivos_novos);
         $resultado = ai_consolidar($nome, $todos, $ctx);
+        $tipo_geracao = 'completo';
     }
 
     $md_final = $resultado . "\n\n---\n*Atualizado em $data via $provider ($modelo) · Unify*\n";
 
-    // Salva o MD consolidado
     $ok = gh_save_file(
         "assuntos/$slug/consolidado/resumo-final.md",
         $md_final,
-        "consolidado: atualiza resumo-final para $slug via $provider"
+        "consolidado: v" . (($meta_anterior['versao'] ?? 0) + 1) . " de $slug via $provider"
     );
 
     if (!$ok) {
@@ -90,40 +97,39 @@ try {
         exit;
     }
 
-    // Salva meta.json com histórico de gerações
+    // Atualiza meta.json com histórico
     $todos_paths = array_values(array_unique(array_merge(
         $paths_anteriores,
         array_column($arquivos_novos, 'path')
     )));
 
-    $historico_anterior = $meta_anterior['historico'] ?? [];
     $versao             = ($meta_anterior['versao'] ?? 0) + 1;
+    $historico_anterior = $meta_anterior['historico'] ?? [];
 
     $historico_anterior[] = [
-        'versao'          => $versao,
-        'gerado_em'       => date('c'),
-        'modelo'          => $modelo,
-        'provedor'        => strtolower($provider),
-        'total_arquivos'  => count($todos_paths),
-        'novos_arquivos'  => count($arquivos_novos),
-        'tipo'            => ($versao === 1) ? 'completo' : (empty($arquivos_novos) ? 'regeneado' : 'incremental'),
-    ];
-
-    $meta_nova = [
-        'arquivos'   => $todos_paths,
-        'notas_ids'  => array_column($ctx['notas'] ?? [], 'id'),
-        'gerado_em'  => date('c'),
-        'modelo'     => $modelo,
-        'provedor'   => strtolower($provider),
-        'total'      => count($todos_paths),
-        'versao'     => $versao,
-        'historico'  => $historico_anterior,
+        'versao'         => $versao,
+        'gerado_em'      => date('c'),
+        'modelo'         => $modelo,
+        'provedor'       => strtolower($provider),
+        'total_arquivos' => count($todos_paths),
+        'novos_arquivos' => count($arquivos_novos),
+        'novas_notas'    => count($notas_novas),
+        'tipo'           => $tipo_geracao,
     ];
 
     gh_save_file(
         $meta_path,
-        json_encode($meta_nova, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
-        "meta: versao $versao do consolidado em $slug"
+        json_encode([
+            'arquivos'   => $todos_paths,
+            'notas_ids'  => array_column($todas_notas, 'id'),
+            'gerado_em'  => date('c'),
+            'modelo'     => $modelo,
+            'provedor'   => strtolower($provider),
+            'total'      => count($todos_paths),
+            'versao'     => $versao,
+            'historico'  => $historico_anterior,
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
+        "meta: versao $versao de $slug"
     );
 
     echo json_encode(['ok' => true]);
