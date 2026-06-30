@@ -1,5 +1,42 @@
 <?php
 
+// Paleta de cores por usuário (slug → [bg, text])
+const USUARIO_CORES = [
+    'fabio'  => ['#dbeafe', '#1d4ed8'],
+    'arthur' => ['#dcfce7', '#15803d'],
+    'daniel' => ['#f3e8ff', '#7e22ce'],
+    'renato' => ['#ffedd5', '#c2410c'],
+    'carlos' => ['#fce7f3', '#be185d'],
+    'joao'   => ['#e0f2fe', '#0369a1'],
+];
+
+function usuario_pill(string $nome): string
+{
+    $slug = mb_strtolower(trim($nome));
+    $cores = USUARIO_CORES[$slug] ?? ['#f1f5f9', '#475569'];
+    return sprintf(
+        '<span style="display:inline-flex;align-items:center;background:%s;color:%s;'
+        . 'border-radius:20px;padding:.05rem .55rem;font-size:.75rem;font-weight:600;'
+        . 'white-space:nowrap;vertical-align:middle;margin:0 .15rem;letter-spacing:.01em;">%s</span>',
+        $cores[0], $cores[1], htmlspecialchars(ucfirst($nome))
+    );
+}
+
+function highlight_usuarios(string $html): string
+{
+    // Detecta [nome] — formato gerado pelo prompt da IA para atribuição
+    $html = preg_replace_callback('/\[([a-zA-ZÀ-ú]{2,20})\]/', function ($m) {
+        return usuario_pill($m[1]);
+    }, $html);
+
+    // Detecta "Usuário: nome" ou "Usuario nome:" no início de linha
+    $html = preg_replace_callback('/\b(Usuário|Usuario):\s*([a-zA-ZÀ-ú]{2,20})\b/', function ($m) {
+        return $m[1] . ': ' . usuario_pill($m[2]);
+    }, $html);
+
+    return $html;
+}
+
 function md_to_html(string $md): string
 {
     // code blocks (fenced)

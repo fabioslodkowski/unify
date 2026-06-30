@@ -82,7 +82,7 @@ layout_head('Resultado — ' . $nome);
       <?php if ($tipo === 'intro'): ?>
         <?php if (trim($sec['conteudo'])): ?>
           <div class="card" style="background:#eff6ff;border-color:#bfdbfe;">
-            <div class="md-content"><?= md_to_html($sec['conteudo']) ?></div>
+            <div class="md-content"><?= highlight_usuarios(md_to_html($sec['conteudo'])) ?></div>
           </div>
         <?php endif; ?>
 
@@ -93,7 +93,7 @@ layout_head('Resultado — ' . $nome);
             <span class="card-title"><?= htmlspecialchars($sec['titulo']) ?></span>
           </div>
           <div class="md-content">
-            <?= md_to_html($sec['conteudo']) ?>
+            <?= highlight_usuarios(md_to_html($sec['conteudo'])) ?>
           </div>
         </div>
       <?php endif; ?>
