@@ -2,6 +2,7 @@
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/lib/github.php';
 require_once __DIR__ . '/lib/layout.php';
+require_once __DIR__ . '/lib/notas.php';
 
 $slug = trim($_GET['slug'] ?? '');
 if (!$slug) redirect('/');
@@ -12,6 +13,10 @@ $uploads = gh_list_uploads($slug);
 // Carrega contexto do assunto
 $ctx_raw  = gh_get_content("assuntos/$slug/contexto.json");
 $contexto = $ctx_raw ? json_decode($ctx_raw, true) : null;
+
+// Carrega todas as notas do assunto
+$todas_notas = notas_de_todos($slug);
+$notas_por_tipo = notas_por_tipo($todas_notas);
 
 // Carrega meta do consolidado para marcar arquivos já incluídos
 $meta_raw        = gh_get_content("assuntos/$slug/consolidado/meta.json");
@@ -60,13 +65,24 @@ layout_head($nome);
     <a href="/upload.php?slug=<?= urlencode($slug) ?>" class="btn btn-outline">📎 Enviar MD</a>
     <a href="/excluir-assunto.php?slug=<?= urlencode($slug) ?>" class="btn btn-outline" style="color:#dc2626;border-color:#fca5a5;" title="Excluir assunto">🗑 Excluir</a>
     <?php if (!empty($uploads)): ?>
-      <form method="post" action="/consolidar.php" style="display:inline">
-        <input type="hidden" name="slug" value="<?= htmlspecialchars($slug) ?>">
-        <button type="submit" class="btn btn-primary btn-lg" id="btn-consolidar"
-          onclick="var b=this;setTimeout(function(){b.disabled=true;b.innerHTML='<span class=spinner></span> Gerando...';},10);">
-          ✨ Gerar Consolidado com IA
-        </button>
-      </form>
+      <?php
+        $tem_consolidado = (bool) $consolidado;
+        $tem_novos       = $novos_arqs > 0;
+        $pode_gerar      = !$tem_consolidado || $tem_novos;
+      ?>
+      <?php if ($pode_gerar): ?>
+        <form method="post" action="/consolidar.php" style="display:inline">
+          <input type="hidden" name="slug" value="<?= htmlspecialchars($slug) ?>">
+          <button type="submit" class="btn btn-primary btn-lg" id="btn-consolidar"
+            onclick="var b=this;setTimeout(function(){b.disabled=true;b.innerHTML='<span class=spinner></span> Gerando...';},10);">
+            ✨ <?= $tem_consolidado ? 'Atualizar Consolidado' : 'Gerar Consolidado com IA' ?>
+          </button>
+        </form>
+      <?php else: ?>
+        <div style="display:inline-flex;align-items:center;gap:.5rem;background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;border-radius:8px;padding:.6rem 1rem;font-size:.875rem;font-weight:500;">
+          ✅ Consolidado em dia — envie novos arquivos para atualizar
+        </div>
+      <?php endif; ?>
     <?php endif; ?>
   </div>
 
@@ -144,6 +160,50 @@ layout_head($nome);
       <?php endif; ?>
     </div>
   <?php endif; ?>
+
+  <!-- Seção de Notas e Contextos -->
+  <div class="card" style="margin-bottom:1rem;">
+    <div class="card-header">
+      <div class="card-icon">📝</div>
+      <span class="card-title">Notas & Contextos</span>
+      <span class="badge badge-gray" style="margin-left:.5rem"><?= count($todas_notas) ?></span>
+      <span style="flex:1"></span>
+      <?php foreach ($USUARIOS as $u_slug => $u_nome): ?>
+        <a href="/notas.php?slug=<?= urlencode($slug) ?>&usuario=<?= urlencode($u_slug) ?>"
+          class="btn btn-outline btn-sm" style="margin-left:.35rem;">✏️ <?= htmlspecialchars($u_nome) ?></a>
+      <?php endforeach; ?>
+    </div>
+
+    <?php if (empty($todas_notas)): ?>
+      <p style="color:var(--gray-600);font-size:.875rem;text-align:center;padding:.75rem 0;">
+        Nenhuma nota adicionada. Clique em um usuário para adicionar contextos.
+      </p>
+    <?php else: ?>
+      <?php foreach (TIPOS_NOTA as $tipo => $cfg):
+        $lista = array_values($notas_por_tipo[$tipo] ?? []);
+        if (empty($lista)) continue;
+      ?>
+        <div style="margin-bottom:.75rem;">
+          <div style="display:flex;align-items:center;gap:.4rem;font-size:.75rem;font-weight:600;
+            text-transform:uppercase;letter-spacing:.06em;color:<?= $cfg['cor'] ?>;margin-bottom:.35rem;">
+            <?= $cfg['icon'] ?> <?= $cfg['label'] ?>
+            <span style="font-weight:400;opacity:.7">(<?= count($lista) ?>)</span>
+          </div>
+          <?php foreach ($lista as $n): ?>
+            <div style="display:flex;align-items:flex-start;gap:.6rem;padding:.45rem .6rem;
+              border-radius:8px;background:<?= $cfg['bg'] ?>;border:1px solid <?= $cfg['border'] ?>;
+              margin-bottom:.35rem;">
+              <span style="font-size:.85rem;margin-top:.05rem"><?= $cfg['icon'] ?></span>
+              <span style="font-size:.875rem;flex:1;line-height:1.5;"><?= nl2br(htmlspecialchars($n['texto'])) ?></span>
+              <span style="font-size:.75rem;color:<?= $cfg['cor'] ?>;opacity:.7;white-space:nowrap;">
+                <?= htmlspecialchars(ucfirst($n['usuario'])) ?>
+              </span>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      <?php endforeach; ?>
+    <?php endif; ?>
+  </div>
 
   <!-- Arquivos por usuário -->
   <?php if (empty($uploads)): ?>

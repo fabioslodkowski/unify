@@ -2,6 +2,7 @@
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/lib/github.php';
 require_once __DIR__ . '/lib/ai.php';
+require_once __DIR__ . '/lib/notas.php';
 
 header('Content-Type: application/json');
 set_time_limit(180);
@@ -18,6 +19,9 @@ $uploads = gh_list_uploads($slug);
 // Carrega contexto (problema + objetivo)
 $ctx_raw = gh_get_content("assuntos/$slug/contexto.json");
 $ctx     = $ctx_raw ? json_decode($ctx_raw, true) : [];
+
+// Carrega todas as notas da equipe
+$ctx['notas'] = notas_de_todos($slug);
 
 if (empty($uploads)) {
     echo json_encode(['ok' => false, 'erro' => 'Nenhum arquivo encontrado.']);
