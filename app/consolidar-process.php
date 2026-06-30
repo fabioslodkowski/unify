@@ -82,24 +82,39 @@ try {
         exit;
     }
 
-    // Salva meta.json com todos os arquivos que agora fazem parte do consolidado
-    $todos_paths = array_merge(
+    // Salva meta.json com histórico de gerações
+    $todos_paths = array_values(array_unique(array_merge(
         $paths_anteriores,
         array_column($arquivos_novos, 'path')
-    );
+    )));
+
+    $historico_anterior = $meta_anterior['historico'] ?? [];
+    $versao             = ($meta_anterior['versao'] ?? 0) + 1;
+
+    $historico_anterior[] = [
+        'versao'          => $versao,
+        'gerado_em'       => date('c'),
+        'modelo'          => $modelo,
+        'provedor'        => strtolower($provider),
+        'total_arquivos'  => count($todos_paths),
+        'novos_arquivos'  => count($arquivos_novos),
+        'tipo'            => ($versao === 1) ? 'completo' : (empty($arquivos_novos) ? 'regeneado' : 'incremental'),
+    ];
 
     $meta_nova = [
-        'arquivos'    => array_values(array_unique($todos_paths)),
-        'gerado_em'   => date('c'),
-        'modelo'      => $modelo,
-        'provedor'    => strtolower($provider),
-        'total'       => count(array_unique($todos_paths)),
+        'arquivos'   => $todos_paths,
+        'gerado_em'  => date('c'),
+        'modelo'     => $modelo,
+        'provedor'   => strtolower($provider),
+        'total'      => count($todos_paths),
+        'versao'     => $versao,
+        'historico'  => $historico_anterior,
     ];
 
     gh_save_file(
         $meta_path,
         json_encode($meta_nova, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
-        "meta: atualiza registro de arquivos consolidados em $slug"
+        "meta: versao $versao do consolidado em $slug"
     );
 
     echo json_encode(['ok' => true]);

@@ -87,12 +87,61 @@ layout_head($nome);
     </div>
   <?php endif; ?>
 
-  <?php if ($consolidado): ?>
-    <div class="alert alert-info" style="display:flex;align-items:center;gap:.75rem;">
-      <span>📄</span>
-      <span>Já existe um consolidado gerado para este assunto.</span>
-      <span class="spacer" style="flex:1"></span>
-      <a href="/resultado.php?slug=<?= urlencode($slug) ?>" class="btn btn-primary btn-sm">Ver Resultado</a>
+  <?php if ($consolidado && $meta): ?>
+    <?php
+      $versao    = $meta['versao'] ?? 1;
+      $historico = $meta['historico'] ?? [];
+      $ultimo    = end($historico) ?: $meta;
+      $data_ger  = isset($ultimo['gerado_em']) ? date('d/m/Y H:i', strtotime($ultimo['gerado_em'])) : '—';
+      $tipo_icon = ['completo' => '🆕', 'incremental' => '➕', 'regeneado' => '🔄'][$ultimo['tipo'] ?? ''] ?? '📄';
+    ?>
+    <div class="card" style="border-color:#bfdbfe;background:#eff6ff;margin-bottom:1rem;">
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+        <div style="font-size:1.5rem;">📄</div>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:.95rem;">Consolidado disponível</div>
+          <div style="font-size:.82rem;color:var(--gray-600);">
+            Última geração: <?= $data_ger ?> · <?= strtoupper($ultimo['provedor'] ?? '') ?> (<?= htmlspecialchars($ultimo['modelo'] ?? '') ?>)
+          </div>
+        </div>
+        <span class="badge badge-blue" style="font-size:.85rem;padding:.3rem .75rem;">
+          v<?= $versao ?> · <?= $versao ?> <?= $versao === 1 ? 'geração' : 'gerações' ?>
+        </span>
+        <a href="/resultado.php?slug=<?= urlencode($slug) ?>" class="btn btn-primary btn-sm">Ver Resultado</a>
+      </div>
+
+      <?php if (count($historico) > 1): ?>
+        <details style="margin-top:.75rem;border-top:1px solid #bfdbfe;padding-top:.75rem;">
+          <summary style="cursor:pointer;font-size:.82rem;color:var(--primary);font-weight:500;user-select:none;">
+            Ver histórico de <?= count($historico) ?> gerações
+          </summary>
+          <table style="width:100%;margin-top:.5rem;font-size:.8rem;border-collapse:collapse;">
+            <thead>
+              <tr style="color:var(--gray-600);text-align:left;border-bottom:1px solid #bfdbfe;">
+                <th style="padding:.3rem .5rem">Versão</th>
+                <th style="padding:.3rem .5rem">Data</th>
+                <th style="padding:.3rem .5rem">Tipo</th>
+                <th style="padding:.3rem .5rem">Arquivos</th>
+                <th style="padding:.3rem .5rem">Modelo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach (array_reverse($historico) as $h): ?>
+                <tr style="border-bottom:1px solid #e0effe;">
+                  <td style="padding:.3rem .5rem;font-weight:600;">v<?= $h['versao'] ?></td>
+                  <td style="padding:.3rem .5rem;"><?= date('d/m/Y H:i', strtotime($h['gerado_em'])) ?></td>
+                  <td style="padding:.3rem .5rem;">
+                    <?php $ti = ['completo'=>'🆕 Completo','incremental'=>'➕ Incremental','regeneado'=>'🔄 Regeneado'][$h['tipo'] ?? ''] ?? '📄'; ?>
+                    <?= $ti ?>
+                  </td>
+                  <td style="padding:.3rem .5rem;"><?= $h['total_arquivos'] ?> <?= ($h['novos_arquivos'] ?? 0) > 0 ? "(+{$h['novos_arquivos']} novos)" : '' ?></td>
+                  <td style="padding:.3rem .5rem;color:var(--gray-600)"><?= htmlspecialchars($h['modelo'] ?? '') ?></td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </details>
+      <?php endif; ?>
     </div>
   <?php endif; ?>
 

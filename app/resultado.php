@@ -7,8 +7,10 @@ require_once __DIR__ . '/lib/layout.php';
 $slug = trim($_GET['slug'] ?? '');
 if (!$slug) redirect('/');
 
-$nome = ucwords(str_replace('-', ' ', $slug));
-$md   = gh_get_content("assuntos/$slug/consolidado/resumo-final.md");
+$nome     = ucwords(str_replace('-', ' ', $slug));
+$md       = gh_get_content("assuntos/$slug/consolidado/resumo-final.md");
+$meta_raw = gh_get_content("assuntos/$slug/consolidado/meta.json");
+$meta     = $meta_raw ? json_decode($meta_raw, true) : null;
 
 if (!$md) {
     redirect("/assunto.php?slug=$slug");
@@ -41,7 +43,13 @@ layout_head('Resultado — ' . $nome);
   <!-- Header do resultado -->
   <div class="resultado-header">
     <h1>📄 Resumo Consolidado</h1>
-    <div class="meta"><?= htmlspecialchars($nome) ?> &nbsp;·&nbsp; Gerado em <?= $data_ger ?> &nbsp;·&nbsp; <?= strtoupper(AI_PROVIDER) ?></div>
+    <div class="meta">
+      <?= htmlspecialchars($nome) ?> &nbsp;·&nbsp; <?= $data_ger ?>
+      <?php if ($meta && isset($meta['versao'])): ?>
+        &nbsp;·&nbsp; <strong>v<?= $meta['versao'] ?></strong> (<?= $meta['versao'] ?> <?= $meta['versao'] === 1 ? 'geração' : 'gerações' ?>)
+      <?php endif; ?>
+      &nbsp;·&nbsp; <?= strtoupper($meta['provedor'] ?? AI_PROVIDER) ?> (<?= htmlspecialchars($meta['modelo'] ?? '') ?>)
+    </div>
   </div>
 
   <!-- Barra de ações -->
