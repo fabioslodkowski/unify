@@ -6,8 +6,8 @@ function ai_consolidar(string $assunto, array $arquivos, array $ctx = []): strin
 {
     $provider = AI_PROVIDER;
 
-    $max_por_arquivo = 4000;
-    $max_total       = 24000;
+    $max_por_arquivo = 3000;
+    $max_total       = 18000;
 
     $contexto  = "Assunto: **$assunto**\n\n";
     if (!empty($ctx['global']))   $contexto .= global_para_prompt($ctx['global']) . "\n\n";
@@ -74,7 +74,7 @@ function ai_consolidar_incremental(string $assunto, string $consolidado_anterior
     $provider = AI_PROVIDER;
 
     $max_por_arquivo = 4000;
-    $max_novos       = 16000;
+    $max_novos       = 12000;
 
     $novos_ctx   = '';
     $total_chars = 0;
@@ -90,8 +90,8 @@ function ai_consolidar_incremental(string $assunto, string $consolidado_anterior
     }
 
     // Trunca o consolidado anterior se for muito grande
-    $anterior_truncado = strlen($consolidado_anterior) > 8000
-        ? substr($consolidado_anterior, 0, 8000) . "\n\n[... resumo anterior truncado ...]"
+    $anterior_truncado = strlen($consolidado_anterior) > 6000
+        ? substr($consolidado_anterior, 0, 6000) . "\n\n[... resumo anterior truncado ...]"
         : $consolidado_anterior;
 
     $ctx_txt = '';
