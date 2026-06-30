@@ -53,11 +53,19 @@ layout_head($nome);
       <?php
         $total_arqs = count($uploads);
         $novos_arqs = count(array_filter($uploads, fn($f) => !in_array($f['path'], $paths_consolidados)));
+        $ids_notas_consolidadas = $meta['notas_ids'] ?? [];
+        $ids_notas_atuais       = array_column($todas_notas, 'id');
+        $notas_novas            = count(array_diff($ids_notas_atuais, $ids_notas_consolidadas));
       ?>
       <p class="page-sub">
         <?= $total_arqs ?> arquivo(s) · <?= count($por_usuario) ?> colaborador(es)
-        <?php if ($novos_arqs > 0): ?>
-          · <span style="color:var(--primary);font-weight:600"><?= $novos_arqs ?> novo(s) desde o último consolidado</span>
+        <?php if ($novos_arqs > 0 || $notas_novas > 0): ?>
+          · <span style="color:var(--primary);font-weight:600">
+            <?php $partes = []; ?>
+            <?php if ($novos_arqs > 0) $partes[] = "$novos_arqs arquivo(s) novo(s)"; ?>
+            <?php if ($notas_novas > 0) $partes[] = "$notas_novas nota(s) nova(s)"; ?>
+            <?= implode(' e ', $partes) ?> desde o último consolidado
+          </span>
         <?php endif; ?>
       </p>
     </div>
@@ -67,7 +75,7 @@ layout_head($nome);
     <?php if (!empty($uploads)): ?>
       <?php
         $tem_consolidado = (bool) $consolidado;
-        $tem_novos       = $novos_arqs > 0;
+        $tem_novos       = $novos_arqs > 0 || $notas_novas > 0;
         $pode_gerar      = !$tem_consolidado || $tem_novos;
       ?>
       <?php if ($pode_gerar): ?>
@@ -75,12 +83,17 @@ layout_head($nome);
           <input type="hidden" name="slug" value="<?= htmlspecialchars($slug) ?>">
           <button type="submit" class="btn btn-primary btn-lg" id="btn-consolidar"
             onclick="var b=this;setTimeout(function(){b.disabled=true;b.innerHTML='<span class=spinner></span> Gerando...';},10);">
-            ✨ <?= $tem_consolidado ? 'Atualizar Consolidado' : 'Gerar Consolidado com IA' ?>
+            ✨ <?php
+            if (!$tem_consolidado) echo 'Gerar Consolidado com IA';
+            elseif ($novos_arqs > 0 && $notas_novas > 0) echo 'Atualizar com novos arquivos e notas';
+            elseif ($novos_arqs > 0) echo 'Atualizar com novos arquivos';
+            else echo 'Atualizar com novas notas';
+          ?>
           </button>
         </form>
       <?php else: ?>
         <div style="display:inline-flex;align-items:center;gap:.5rem;background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;border-radius:8px;padding:.6rem 1rem;font-size:.875rem;font-weight:500;">
-          ✅ Consolidado em dia — envie novos arquivos para atualizar
+          ✅ Consolidado em dia — envie arquivos ou adicione notas para atualizar
         </div>
       <?php endif; ?>
     <?php endif; ?>

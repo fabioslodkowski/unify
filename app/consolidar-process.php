@@ -107,6 +107,7 @@ try {
 
     $meta_nova = [
         'arquivos'   => $todos_paths,
+        'notas_ids'  => array_column($ctx['notas'] ?? [], 'id'),
         'gerado_em'  => date('c'),
         'modelo'     => $modelo,
         'provedor'   => strtolower($provider),
