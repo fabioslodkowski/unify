@@ -85,6 +85,24 @@ function gh_get_content(string $path): ?string
     return base64_decode(str_replace("\n", '', $file['content']));
 }
 
+// Lista todos os arquivos recursivamente dentro de um caminho (relativo ao DATA_PATH)
+function gh_list_all_files(string $path): array
+{
+    $items  = gh_list_dir($path);
+    $result = [];
+    foreach ($items as $item) {
+        if ($item['type'] === 'file') {
+            // path relativo ao DATA_PATH
+            $rel = str_replace(GITHUB_DATA_PATH . '/', '', $item['path']);
+            $result[] = ['path' => $rel, 'sha' => $item['sha']];
+        } elseif ($item['type'] === 'dir') {
+            $rel = str_replace(GITHUB_DATA_PATH . '/', '', $item['path']);
+            $result = array_merge($result, gh_list_all_files($rel));
+        }
+    }
+    return $result;
+}
+
 function gh_list_assuntos(): array
 {
     $items = gh_list_dir('assuntos');

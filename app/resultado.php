@@ -52,7 +52,7 @@ layout_head('Resultado — ' . $nome);
     <form method="post" action="/consolidar.php" style="display:inline">
       <input type="hidden" name="slug" value="<?= htmlspecialchars($slug) ?>">
       <button type="submit" class="btn btn-outline"
-        onclick="this.disabled=true;this.innerHTML='<span class=spinner></span> Gerando...'">
+        onclick="var b=this;setTimeout(function(){b.disabled=true;b.innerHTML='<span class=spinner></span> Gerando...';},10);">
         🔄 Gerar novamente
       </button>
     </form>

@@ -1,12 +1,25 @@
 <?php
 
-function ai_consolidar(string $assunto, array $arquivos): string
+function ai_consolidar(string $assunto, array $arquivos, array $ctx = []): string
 {
     $provider = AI_PROVIDER;
 
-    $contexto = "Assunto: **$assunto**\n\n";
+    $max_por_arquivo = 4000;
+    $max_total       = 24000;
+
+    $contexto  = "Assunto: **$assunto**\n\n";
+    if (!empty($ctx['problema'])) $contexto .= "**Problema a resolver:** {$ctx['problema']}\n\n";
+    if (!empty($ctx['objetivo'])) $contexto .= "**Objetivo:** {$ctx['objetivo']}\n\n";
+    $total_chars = 0;
     foreach ($arquivos as $a) {
-        $contexto .= "---\n### Arquivo: {$a['arquivo']} (Usuário: {$a['usuario']})\n\n{$a['conteudo']}\n\n";
+        $conteudo = $a['conteudo'];
+        if (strlen($conteudo) > $max_por_arquivo) {
+            $conteudo = substr($conteudo, 0, $max_por_arquivo) . "\n\n[... conteúdo truncado ...]";
+        }
+        $bloco = "---\n### Arquivo: {$a['arquivo']} (Usuário: {$a['usuario']})\n\n{$conteudo}\n\n";
+        if ($total_chars + strlen($bloco) > $max_total) break;
+        $contexto   .= $bloco;
+        $total_chars += strlen($bloco);
     }
 
     $prompt = <<<PROMPT
@@ -43,6 +56,70 @@ Estrutura obrigatória de saída:
 Conteúdo dos arquivos:
 
 {$contexto}
+PROMPT;
+
+    if ($provider === 'claude') {
+        return ai_claude($prompt);
+    } else {
+        return ai_openai($prompt);
+    }
+}
+
+function ai_consolidar_incremental(string $assunto, string $consolidado_anterior, array $novos, array $ctx = []): string
+{
+    $provider = AI_PROVIDER;
+
+    $max_por_arquivo = 4000;
+    $max_novos       = 16000;
+
+    $novos_ctx   = '';
+    $total_chars = 0;
+    foreach ($novos as $a) {
+        $conteudo = $a['conteudo'];
+        if (strlen($conteudo) > $max_por_arquivo) {
+            $conteudo = substr($conteudo, 0, $max_por_arquivo) . "\n\n[... conteúdo truncado ...]";
+        }
+        $bloco = "---\n### Arquivo: {$a['arquivo']} (Usuário: {$a['usuario']})\n\n{$conteudo}\n\n";
+        if ($total_chars + strlen($bloco) > $max_novos) break;
+        $novos_ctx   .= $bloco;
+        $total_chars += strlen($bloco);
+    }
+
+    // Trunca o consolidado anterior se for muito grande
+    $anterior_truncado = strlen($consolidado_anterior) > 8000
+        ? substr($consolidado_anterior, 0, 8000) . "\n\n[... resumo anterior truncado ...]"
+        : $consolidado_anterior;
+
+    $ctx_txt = '';
+    if (!empty($ctx['problema'])) $ctx_txt .= "**Problema a resolver:** {$ctx['problema']}\n";
+    if (!empty($ctx['objetivo'])) $ctx_txt .= "**Objetivo:** {$ctx['objetivo']}\n";
+    if ($ctx_txt) $ctx_txt = "\n$ctx_txt\n";
+
+    $prompt = <<<PROMPT
+Você tem um resumo consolidado anterior e novos arquivos Markdown que precisam ser incorporados.
+
+Sua tarefa é atualizar o resumo consolidado incorporando as informações dos novos arquivos.
+
+Regras:
+- Mantenha toda a estrutura e informação do resumo anterior
+- Incorpore os novos pontos, evidências e análises dos novos arquivos
+- Identifique se os novos arquivos confirmam, divergem ou complementam o que já estava no consolidado
+- Atualize as seções afetadas (pontos de consenso, divergentes, riscos, próximos passos, etc.)
+- Adicione os novos arquivos na seção de Fontes Utilizadas
+- Use emojis nos títulos das seções
+- Escreva em português do Brasil
+
+Assunto: **{$assunto}**{$ctx_txt}
+
+## Resumo consolidado anterior:
+
+{$anterior_truncado}
+
+## Novos arquivos a incorporar:
+
+{$novos_ctx}
+
+Gere o resumo consolidado atualizado com a mesma estrutura de seções do anterior.
 PROMPT;
 
     if ($provider === 'claude') {

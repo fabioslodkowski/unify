@@ -17,6 +17,10 @@ layout_head('Assuntos');
     <a href="/novo-assunto.php" class="btn btn-primary">+ Novo Assunto</a>
   </div>
 
+  <?php if (isset($_GET['excluido'])): ?>
+    <div class="alert alert-success">🗑 Assunto <strong><?= htmlspecialchars($_GET['excluido']) ?></strong> excluído com sucesso.</div>
+  <?php endif; ?>
+
   <?php if (empty($assuntos)): ?>
     <div class="empty-state">
       <div class="icon">📭</div>

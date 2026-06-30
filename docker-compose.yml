@@ -2,9 +2,9 @@ services:
   unify:
     build: .
     ports:
-      - "8080:80"
+      - "80:80"
     volumes:
-      - ./app:/var/www/html   # hot-reload durante desenvolvimento
+      - ./app:/var/www/html
     environment:
       - APACHE_LOG_DIR=/var/log/apache2
     restart: unless-stopped
