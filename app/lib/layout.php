@@ -16,6 +16,7 @@ function layout_head(string $titulo = 'Unify'): void
 <nav class="navbar">
   <a class="navbar-brand" href="/"><span>uni</span>fy</a>
   <span class="navbar-sep"></span>
+  <a href="/configuracoes.php" class="btn btn-outline btn-sm">⚙️ Configurações</a>
   <a href="/novo-assunto.php" class="btn btn-primary btn-sm">+ Novo Assunto</a>
 </nav>
 HTML;

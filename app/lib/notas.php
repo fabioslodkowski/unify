@@ -49,6 +49,28 @@ function notas_de_todos(string $slug): array
     return $resultado;
 }
 
+function global_para_prompt(array $global): string
+{
+    if (empty($global)) return '';
+
+    $txt = "## Contexto institucional (aplique apenas se pertinente ao assunto)\n\n";
+
+    if (!empty($global['contexto'])) {
+        $txt .= $global['contexto'] . "\n\n";
+    }
+
+    $regras_ativas = array_filter($global['regras'] ?? [], fn($r) => $r['ativo'] ?? true);
+    if (!empty($regras_ativas)) {
+        $txt .= "### Regras e diretrizes (aplique quando cabível)\n";
+        foreach ($regras_ativas as $r) {
+            $txt .= "- {$r['texto']}\n";
+        }
+        $txt .= "\n";
+    }
+
+    return $txt;
+}
+
 function notas_para_prompt(array $notas): string
 {
     if (empty($notas)) return '';

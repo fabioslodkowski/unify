@@ -10,6 +10,7 @@ function ai_consolidar(string $assunto, array $arquivos, array $ctx = []): strin
     $max_total       = 24000;
 
     $contexto  = "Assunto: **$assunto**\n\n";
+    if (!empty($ctx['global']))   $contexto .= global_para_prompt($ctx['global']) . "\n\n";
     if (!empty($ctx['problema'])) $contexto .= "**Problema a resolver:** {$ctx['problema']}\n\n";
     if (!empty($ctx['objetivo'])) $contexto .= "**Objetivo:** {$ctx['objetivo']}\n\n";
     if (!empty($ctx['notas']))    $contexto .= notas_para_prompt($ctx['notas']) . "\n\n";
@@ -96,7 +97,8 @@ function ai_consolidar_incremental(string $assunto, string $consolidado_anterior
     $ctx_txt = '';
     if (!empty($ctx['problema'])) $ctx_txt .= "**Problema a resolver:** {$ctx['problema']}\n";
     if (!empty($ctx['objetivo'])) $ctx_txt .= "**Objetivo:** {$ctx['objetivo']}\n";
-    if (!empty($ctx['notas'])) $ctx_txt .= notas_para_prompt($ctx['notas']) . "\n";
+    if (!empty($ctx['global'])) $ctx_txt .= global_para_prompt($ctx['global']) . "\n";
+    if (!empty($ctx['notas']))  $ctx_txt .= notas_para_prompt($ctx['notas']) . "\n";
     if ($ctx_txt) $ctx_txt = "\n$ctx_txt\n";
 
     $prompt = <<<PROMPT

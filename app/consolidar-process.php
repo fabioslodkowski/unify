@@ -20,6 +20,10 @@ $uploads = gh_list_uploads($slug);
 $ctx_raw = gh_get_content("assuntos/$slug/contexto.json");
 $ctx     = $ctx_raw ? json_decode($ctx_raw, true) : [];
 
+// Carrega configurações globais da Brudam
+$global_raw    = gh_get_content('config/global.json');
+$ctx['global'] = $global_raw ? json_decode($global_raw, true) : null;
+
 // Carrega todas as notas da equipe
 $ctx['notas'] = notas_de_todos($slug);
 
