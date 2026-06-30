@@ -203,16 +203,25 @@ layout_head($nome);
             <span style="font-weight:400;opacity:.7">(<?= count($lista) ?>)</span>
           </div>
           <?php foreach ($lista as $n): ?>
+            <?php $nota_consolidada = in_array($n['id'], $ids_notas_consolidadas); ?>
             <a href="/notas.php?slug=<?= urlencode($slug) ?>&usuario=<?= urlencode($n['usuario']) ?>&editar=<?= urlencode($n['id']) ?>"
               style="display:flex;align-items:flex-start;gap:.6rem;padding:.45rem .6rem;
               border-radius:8px;background:<?= $cfg['bg'] ?>;border:1px solid <?= $cfg['border'] ?>;
-              margin-bottom:.35rem;text-decoration:none;color:inherit;transition:filter .15s;"
+              margin-bottom:.35rem;text-decoration:none;color:inherit;transition:filter .15s;
+              <?= $nota_consolidada ? 'opacity:.65;' : '' ?>"
               onmouseover="this.style.filter='brightness(.96)'" onmouseout="this.style.filter=''">
-              <span style="font-size:.85rem;margin-top:.05rem"><?= $cfg['icon'] ?></span>
+              <span style="font-size:.85rem;margin-top:.05rem"><?= $nota_consolidada ? '✅' : '🆕' ?></span>
               <span style="font-size:.875rem;flex:1;line-height:1.5;"><?= nl2br(htmlspecialchars($n['texto'])) ?></span>
-              <span style="font-size:.75rem;color:<?= $cfg['cor'] ?>;opacity:.7;white-space:nowrap;margin-top:.1rem;">
-                <?= htmlspecialchars(ucfirst($n['usuario'])) ?> &nbsp;✏️
-              </span>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.2rem;flex-shrink:0;">
+                <?php if ($nota_consolidada): ?>
+                  <span style="font-size:.7rem;background:#dcfce7;color:#15803d;border-radius:20px;padding:.1rem .45rem;font-weight:600;">consolidada</span>
+                <?php else: ?>
+                  <span style="font-size:.7rem;background:#dbeafe;color:#1d4ed8;border-radius:20px;padding:.1rem .45rem;font-weight:600;">nova</span>
+                <?php endif; ?>
+                <span style="font-size:.72rem;color:<?= $cfg['cor'] ?>;opacity:.7;white-space:nowrap;">
+                  <?= htmlspecialchars(ucfirst($n['usuario'])) ?> ✏️
+                </span>
+              </div>
             </a>
           <?php endforeach; ?>
         </div>
