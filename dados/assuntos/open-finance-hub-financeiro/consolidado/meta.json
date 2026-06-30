@@ -12,8 +12,23 @@
         "assuntos\/open-finance-hub-financeiro\/uploads\/fabio\/onboarding-cliente.md",
         "assuntos\/open-finance-hub-financeiro\/uploads\/fabio\/pq-usar-boleto-ainda.md"
     ],
-    "gerado_em": "2026-06-30T00:40:08+00:00",
+    "notas_ids": [
+        "6a4381ccba3bb"
+    ],
+    "gerado_em": "2026-06-30T08:56:12+00:00",
     "modelo": "gpt-5.5",
     "provedor": "openai",
-    "total": 11
+    "total": 11,
+    "versao": 1,
+    "historico": [
+        {
+            "versao": 1,
+            "gerado_em": "2026-06-30T08:56:12+00:00",
+            "modelo": "gpt-5.5",
+            "provedor": "openai",
+            "total_arquivos": 11,
+            "novos_arquivos": 0,
+            "tipo": "completo"
+        }
+    ]
 }
