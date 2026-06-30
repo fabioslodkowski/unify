@@ -1,0 +1,6 @@
+{
+    "nome": "Open Finance \/ Hub Financeiro",
+    "problema": "O TMS\/Admin Brudam depende de fluxos financeiros fragmentados: CNAB manual, retornos por arquivo, APIs especificas por banco, certificados, credenciais e regras diferentes. A duvida central e entender se Open Finance resolve essa automacao ou se ainda sera necessario um Hub Financeiro proprio para orquestrar CNAB, APIs bancarias, Pix, boletos e conciliacao.",
+    "objetivo": "Definir uma arquitetura unificada para o financeiro do TMS e do Admin Brudam, separando o que deve continuar via CNAB, o que deve migrar para APIs bancarias, o que pode usar Open Finance e onde parceiros como Pluggy, TecnoSpeed, Celcoin ou Belvo fazem sentido e estudo de valores e custos",
+    "criado_em": "2026-06-30T00:37:11+00:00"
+}
